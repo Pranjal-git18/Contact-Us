@@ -1170,21 +1170,16 @@
                   resultsDiv.style.marginTop = '-2%' ; 
                   resultsDiv.style.width = '95%';
               }
-              console.log('debouncetimeout ',debounceTimeout);
               clearTimeout(debounceTimeout);
               if(partNumberValue.length == 0) {
                   resultsDiv.style.display = 'none';
                   return;
               }
               debounceTimeout = setTimeout(async () => {
-                  console.log('in debounce time out');
               const lengthDivisibleByThree = partNumberValue.length - (partNumberValue.length % 3);
               let stringToSearch = partNumberValue.substring(0, lengthDivisibleByThree);
               if(stringToSearch.length %3 == 0 && stringToSearch.length>=3) {
-                  console.log('partNumber.value',stringToSearch);
-                  
                   let partNumbers = await fetchPartNumbers(stringToSearch);
-                  console.log('partNumbers ',partNumbers);
                   resultsDiv.innerHTML = "";
                   if(partNumbers.length) {
                       resultsDiv.classList.remove("hidden");
@@ -1880,7 +1875,6 @@
                             errorElement.style.fontSize = "1em";
                           }
                         });
-                        console.log("THIS IS INVALID :: ", isValid);
                         if (isValid) {
                           leadForm.submit();
                         } else {
