@@ -1,0 +1,943 @@
+<!DOCTYPE html>
+<html>
+  <head><meta http-equiv="origin-trial" content="Az520Inasey3TAyqLyojQa8MnmCALSEU29yQFW8dePZ7xQTvSt73pHazLFTK5f7SyLUJSo2uKLesEtEa9aUYcgMAAACPeyJvcmlnaW4iOiJodHRwczovL2dvb2dsZS5jb206NDQzIiwiZmVhdHVyZSI6IkRpc2FibGVUaGlyZFBhcnR5U3RvcmFnZVBhcnRpdGlvbmluZyIsImV4cGlyeSI6MTcyNTQwNzk5OSwiaXNTdWJkb21haW4iOnRydWUsImlzVGhpcmRQYXJ0eSI6dHJ1ZX0=">
+    <!-- Google Tag Manager -->
+    <script type="text/javascript" src="https://pi.pardot.com/pd.js"></script><script type="text/javascript" async="" src="https://www.gstatic.com/recaptcha/releases/KXX4ARWFlYTftefkdODAYWZh/recaptcha__en.js" crossorigin="anonymous" integrity="sha384-9QqbrduyhvTkE1knPG7e8vZdHL95dTvL+5nDP2Q75ZzSBMqM7hBF4FBqPllxiD5J"></script><script type="text/javascript" async="" src="https://www.googletagmanager.com/gtag/js?id=G-4NTFQTCMF4&amp;l=dataLayer&amp;cx=c"></script><script async="" src="https://www.googletagmanager.com/gtm.js?id=GTM-W9MR3LW4"></script><script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+    new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+    j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+    'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+    })(window,document,'script','dataLayer','GTM-W9MR3LW4');</script>
+    <!-- End Google Tag Manager -->
+
+    <script>
+      let partNumbers = [];
+      document.addEventListener("DOMContentLoaded", function() {
+          fetchPartNumbers('');
+
+          function debounce(handlePartNumber, delay) {
+              let timeout=null
+              return () => {
+                  timeout=setTimeout(() => {
+                      handlePartNumber()
+                  }, 4000)
+              }
+          }
+      });
+
+      async function fetchPartNumbers(searchTerm) {
+      const url = `https://prod-avs-aircraft.my.salesforce-sites.com/services/apexrest/partNumber/${encodeURIComponent(searchTerm)}`;
+      await fetch(url, {
+          method: 'GET',
+          headers: {
+              'Content-Type': 'application/json'
+          }
+      })
+      .then(response=>{
+          if(!response.ok) {
+              throw new Error('Network response was not Ok '+response.statusText);
+          }
+          return response.json();
+      })
+      .then(data=>{
+          partNumbers = data;
+      })
+      return partNumbers;
+  }
+  </script>
+  <script>
+      let partNumberValue = '';
+      let partNumberSelect = false;
+      let noRecord = false;
+      let submitButtonClick = false;
+      let docallOut = true;
+      let debounceTimeout;
+        function handlePartNumber() {
+           const partNumber = document.getElementById("00NUS000001ga89");
+           const getSubmitButton = document.getElementById("submitBtn");
+           partNumberValue = partNumber.value;
+           partNumberSelect = false;
+
+          const resultsDiv = document.getElementById("partNumberResults");
+
+              if(partNumberValue.length >=3) {
+                  resultsDiv.innerHTML = "<p>Loading...</p>";
+                  getSubmitButton.disabled = true;
+                  resultsDiv.style.display = 'block';
+                  resultsDiv.style.position = "absolute";
+                  resultsDiv.style.color = 'black';
+                  resultsDiv.style.zIndex = 1;
+                  resultsDiv.style.background = 'white';
+                  resultsDiv.style.marginTop = '-2%' ; 
+                  resultsDiv.style.width = '95%';
+                  if (window.innerWidth > 499) {
+                    //For bigger screens
+                    resultsDiv.style.width = "85%";
+                  } else {
+                    resultsDiv.style.width = "92%";
+                  }
+              }
+              
+              clearTimeout(debounceTimeout);
+              if(partNumberValue.length == 0) {
+                  resultsDiv.style.display = 'none';
+                  return;
+              }
+              debounceTimeout = setTimeout(async () => {
+              const lengthDivisibleByThree = partNumberValue.length - (partNumberValue.length % 3);
+              let stringToSearch = partNumberValue.substring(0, lengthDivisibleByThree);
+              if(stringToSearch.length %3 == 0 && stringToSearch.length>=3) {
+                  
+                  let partNumbers = await fetchPartNumbers(stringToSearch);
+                  resultsDiv.innerHTML = "";
+                  if(partNumbers.length) {
+                      resultsDiv.classList.remove("hidden");
+                      resultsDiv.style.position = "absolute";
+                      resultsDiv.style.color = 'black';
+                      resultsDiv.style.background = 'white';
+                      const list = document.createElement("ul");
+                      list.style.listStyleType = "none";
+                      list.style.textAlign = 'left';
+                      list.style.cursor = 'pointer';
+                      partNumbers.forEach(number => {
+                          const listItem = document.createElement("li");
+                          listItem.textContent = number.Name;
+                          listItem.addEventListener("click", function() {
+                              partNumber.value = listItem.textContent;
+                              partNumberSelect = true;
+                              getSubmitButton.disabled = false;
+                          });
+                          list.appendChild(listItem);
+                      });
+                      resultsDiv.appendChild(list);
+                  }
+                  else {
+                      partNumbers = [];
+                      resultsDiv.classList.add("hidden");
+                      resultsDiv.textContent = "No matching part numbers found";
+                      resultsDiv.style.background = 'none';
+                      resultsDiv.style.position = 'relative';
+                      resultsDiv.style.color = 'rgb(220, 50, 50)';
+                      resultsDiv.style.fontSize = '1em';
+
+                      let partNumber = document.getElementById("00NUS000001ga89");
+                  }
+              }
+          }, 2000);
+          console.log('partnumber value',partNumber.value);
+      }
+
+      let partNumberValid = false;
+      document.addEventListener("click", function(event) {
+          const clickedElement = document.elementFromPoint(event.clientX, event.clientY);
+          if(!clickedElement.className.includes('partNumber')) {
+              const resultsDiv = document.getElementById("partNumberResults");
+              resultsDiv.style.display = 'none';
+              resultsDiv.style.color = 'black';
+          }
+          makePartNumberFieldEmpty();
+      });
+
+      function makePartNumberFieldEmpty() {
+          if(partNumberSelect == false) {
+              let partNumber = document.getElementById("00NUS000001ga89");
+              partNumber.value = '';
+              const getSubmitButton = document.getElementById("submitBtn");
+              getSubmitButton.disabled = false;
+          }
+      }
+
+      
+      
+  </script>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1">
+    
+    <!-- Google Tag Manager for WordPress by gtm4wp.com -->
+    <script data-cfasync="false" data-pagespeed-no-defer="">
+      var gtm4wp_datalayer_name = "dataLayer";
+      var dataLayer = dataLayer || [];
+    </script>
+    <!-- End Google Tag Manager for WordPress by gtm4wp.com -->
+      <!-- This site is optimized with the Yoast SEO plugin v22.9 - https://yoast.com/wordpress/plugins/seo/ -->
+      <title>Business Jet and Aircraft Parts Aftermarket Blog</title>
+      <meta name="description" content="Check out our blog section for articles relating to aircraft parts, the aftermarket, tips and best practices.">
+      <link rel="canonical" href="https://aircraftparts.net/blog/">
+      <meta property="og:locale" content="en_US">
+      <meta property="og:type" content="article">
+      <meta property="og:title" content="Business Jet and Aircraft Parts Aftermarket Blog">
+      <meta property="og:description" content="Check out our blog section for articles relating to aircraft parts, the aftermarket, tips and best practices.">
+      <meta property="og:url" content="https://aircraftparts.net/blog/">
+      <meta property="og:site_name" content="Aircraft-parts">
+      <meta property="article:modified_time" content="2024-05-13T03:32:07+00:00">
+      <meta property="og:image" content="https://aircraftparts.net/wp-content/uploads/2022/12/inner-banner.png">
+      <meta property="og:image:width" content="1920">
+      <meta property="og:image:height" content="436">
+      <meta property="og:image:type" content="image/png">
+      <meta name="twitter:card" content="summary_large_image">
+      <meta name="twitter:label1" content="Est. reading time">
+      <meta name="twitter:data1" content="1 minute">
+      <script type="application/ld+json" class="yoast-schema-graph">{"@context":"https://schema.org","@graph":[{"@type":"WebPage","@id":"https://aircraftparts.net/blog/","url":"https://aircraftparts.net/blog/","name":"Business Jet and Aircraft Parts Aftermarket Blog","isPartOf":{"@id":"https://aircraftparts.net/#website"},"primaryImageOfPage":{"@id":"https://aircraftparts.net/blog/#primaryimage"},"image":{"@id":"https://aircraftparts.net/blog/#primaryimage"},"thumbnailUrl":"https://aircraftparts.net/wp-content/uploads/2022/12/inner-banner.png","datePublished":"2022-12-27T10:49:48+00:00","dateModified":"2024-05-13T03:32:07+00:00","description":"Check out our blog section for articles relating to aircraft parts, the aftermarket, tips and best practices.","breadcrumb":{"@id":"https://aircraftparts.net/blog/#breadcrumb"},"inLanguage":"en","potentialAction":[{"@type":"ReadAction","target":["https://aircraftparts.net/blog/"]}]},{"@type":"ImageObject","inLanguage":"en","@id":"https://aircraftparts.net/blog/#primaryimage","url":"https://aircraftparts.net/wp-content/uploads/2022/12/inner-banner.png","contentUrl":"https://aircraftparts.net/wp-content/uploads/2022/12/inner-banner.png","width":1920,"height":436},{"@type":"BreadcrumbList","@id":"https://aircraftparts.net/blog/#breadcrumb","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://aircraftparts.net/"},{"@type":"ListItem","position":2,"name":"Blog"}]},{"@type":"WebSite","@id":"https://aircraftparts.net/#website","url":"https://aircraftparts.net/","name":"Aircraft-parts","description":"","potentialAction":[{"@type":"SearchAction","target":{"@type":"EntryPoint","urlTemplate":"https://aircraftparts.net/?s={search_term_string}"},"query-input":"required name=search_term_string"}],"inLanguage":"en"}]}</script>
+      <!-- / Yoast SEO plugin. -->
+    
+    
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net">
+    <link rel="dns-prefetch" href="//cdnjs.cloudflare.com">
+    <link rel="dns-prefetch" href="//fonts.googleapis.com">
+    <link rel="alternate" type="application/rss+xml" title="Aircraft-parts » Feed" href="https://aircraftparts.net/feed/">
+    <link rel="alternate" type="application/rss+xml" title="Aircraft-parts » Comments Feed" href="https://aircraftparts.net/comments/feed/">
+    <script>
+    window._wpemojiSettings = {"baseUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/72x72\/","ext":".png","svgUrl":"https:\/\/s.w.org\/images\/core\/emoji\/15.0.3\/svg\/","svgExt":".svg","source":{"concatemoji":"https:\/\/aircraftparts.net\/wp-includes\/js\/wp-emoji-release.min.js?ver=6.5.4"}};
+    /*! This file is auto-generated */
+    !function(i,n){var o,s,e;function c(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(o,JSON.stringify(t))}catch(e){}}function p(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data),r=(e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0),new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data));return t.every(function(e,t){return e===r[t]})}function u(e,t,n){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\uddfa\ud83c\uddf3","\ud83c\uddfa\u200b\ud83c\uddf3")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!n(e,"\ud83d\udc26\u200d\u2b1b","\ud83d\udc26\u200b\u2b1b")}return!1}function f(e,t,n){var r="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):i.createElement("canvas"),a=r.getContext("2d",{willReadFrequently:!0}),o=(a.textBaseline="top",a.font="600 32px Arial",{});return e.forEach(function(e){o[e]=t(a,e,n)}),o}function t(e){var t=i.createElement("script");t.src=e,t.defer=!0,i.head.appendChild(t)}"undefined"!=typeof Promise&&(o="wpEmojiSettingsSupports",s=["flag","emoji"],n.supports={everything:!0,everythingExceptFlag:!0},e=new Promise(function(e){i.addEventListener("DOMContentLoaded",e,{once:!0})}),new Promise(function(t){var n=function(){try{var e=JSON.parse(sessionStorage.getItem(o));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(s),u.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"}),a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=function(e){c(n=e.data),a.terminate(),t(n)})}catch(e){}c(n=f(s,u,p))}t(n)}).then(function(e){for(var t in e)n.supports[t]=e[t],n.supports.everything=n.supports.everything&&n.supports[t],"flag"!==t&&(n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&n.supports[t]);n.supports.everythingExceptFlag=n.supports.everythingExceptFlag&&!n.supports.flag,n.DOMReady=!1,n.readyCallback=function(){n.DOMReady=!0}}).then(function(){return e}).then(function(){var e;n.supports.everything||(n.readyCallback(),(e=n.source||{}).concatemoji?t(e.concatemoji):e.wpemoji&&e.twemoji&&(t(e.twemoji),t(e.wpemoji)))}))}((window,document),window._wpemojiSettings);
+    </script>
+    <style id="wp-emoji-styles-inline-css">
+    
+      img.wp-smiley, img.emoji {
+        display: inline !important;
+        border: none !important;
+        box-shadow: none !important;
+        height: 1em !important;
+        width: 1em !important;
+        margin: 0 0.07em !important;
+        vertical-align: -0.1em !important;
+        background: none !important;
+        padding: 0 !important;
+      }
+    </style>
+    <link rel="stylesheet" id="wp-block-library-css" href="https://aircraftparts.net/wp-includes/css/dist/block-library/style.min.css?ver=6.5.4" media="all">
+    <style id="wp-block-library-theme-inline-css">
+    .wp-block-audio figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-audio figcaption{color:#ffffffa6}.wp-block-audio{margin:0 0 1em}.wp-block-code{border:1px solid #ccc;border-radius:4px;font-family:Menlo,Consolas,monaco,monospace;padding:.8em 1em}.wp-block-embed figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-embed figcaption{color:#ffffffa6}.wp-block-embed{margin:0 0 1em}.blocks-gallery-caption{color:#555;font-size:13px;text-align:center}.is-dark-theme .blocks-gallery-caption{color:#ffffffa6}.wp-block-image figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-image figcaption{color:#ffffffa6}.wp-block-image{margin:0 0 1em}.wp-block-pullquote{border-bottom:4px solid;border-top:4px solid;color:currentColor;margin-bottom:1.75em}.wp-block-pullquote cite,.wp-block-pullquote footer,.wp-block-pullquote__citation{color:currentColor;font-size:.8125em;font-style:normal;text-transform:uppercase}.wp-block-quote{border-left:.25em solid;margin:0 0 1.75em;padding-left:1em}.wp-block-quote cite,.wp-block-quote footer{color:currentColor;font-size:.8125em;font-style:normal;position:relative}.wp-block-quote.has-text-align-right{border-left:none;border-right:.25em solid;padding-left:0;padding-right:1em}.wp-block-quote.has-text-align-center{border:none;padding-left:0}.wp-block-quote.is-large,.wp-block-quote.is-style-large,.wp-block-quote.is-style-plain{border:none}.wp-block-search .wp-block-search__label{font-weight:700}.wp-block-search__button{border:1px solid #ccc;padding:.375em .625em}:where(.wp-block-group.has-background){padding:1.25em 2.375em}.wp-block-separator.has-css-opacity{opacity:.4}.wp-block-separator{border:none;border-bottom:2px solid;margin-left:auto;margin-right:auto}.wp-block-separator.has-alpha-channel-opacity{opacity:1}.wp-block-separator:not(.is-style-wide):not(.is-style-dots){width:100px}.wp-block-separator.has-background:not(.is-style-dots){border-bottom:none;height:1px}.wp-block-separator.has-background:not(.is-style-wide):not(.is-style-dots){height:2px}.wp-block-table{margin:0 0 1em}.wp-block-table td,.wp-block-table th{word-break:normal}.wp-block-table figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-table figcaption{color:#ffffffa6}.wp-block-video figcaption{color:#555;font-size:13px;text-align:center}.is-dark-theme .wp-block-video figcaption{color:#ffffffa6}.wp-block-video{margin:0 0 1em}.wp-block-template-part.has-background{margin-bottom:0;margin-top:0;padding:1.25em 2.375em}
+    </style>
+    <style id="classic-theme-styles-inline-css">
+    /*! This file is auto-generated */
+    .wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+    </style>
+    <style id="global-styles-inline-css">
+    body{--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #FFFFFF;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--color--dark-gray: #28303D;--wp--preset--color--gray: #39414D;--wp--preset--color--green: #D1E4DD;--wp--preset--color--blue: #D1DFE4;--wp--preset--color--purple: #D1D1E4;--wp--preset--color--red: #E4D1D1;--wp--preset--color--orange: #E4DAD1;--wp--preset--color--yellow: #EEEADD;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgba(6,147,227,1) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgba(252,185,0,1) 0%,rgba(255,105,0,1) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgba(255,105,0,1) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--gradient--purple-to-yellow: linear-gradient(160deg, #D1D1E4 0%, #EEEADD 100%);--wp--preset--gradient--yellow-to-purple: linear-gradient(160deg, #EEEADD 0%, #D1D1E4 100%);--wp--preset--gradient--green-to-yellow: linear-gradient(160deg, #D1E4DD 0%, #EEEADD 100%);--wp--preset--gradient--yellow-to-green: linear-gradient(160deg, #EEEADD 0%, #D1E4DD 100%);--wp--preset--gradient--red-to-yellow: linear-gradient(160deg, #E4D1D1 0%, #EEEADD 100%);--wp--preset--gradient--yellow-to-red: linear-gradient(160deg, #EEEADD 0%, #E4D1D1 100%);--wp--preset--gradient--purple-to-red: linear-gradient(160deg, #D1D1E4 0%, #E4D1D1 100%);--wp--preset--gradient--red-to-purple: linear-gradient(160deg, #E4D1D1 0%, #D1D1E4 100%);--wp--preset--font-size--small: 18px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 24px;--wp--preset--font-size--x-large: 42px;--wp--preset--font-size--extra-small: 16px;--wp--preset--font-size--normal: 20px;--wp--preset--font-size--extra-large: 40px;--wp--preset--font-size--huge: 96px;--wp--preset--font-size--gigantic: 144px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgba(255, 255, 255, 1), 6px 6px rgba(0, 0, 0, 1);--wp--preset--shadow--crisp: 6px 6px 0px rgba(0, 0, 0, 1);}:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}body .is-layout-flex{flex-wrap: wrap;align-items: center;}body .is-layout-flex > *{margin: 0;}body .is-layout-grid{display: grid;}body .is-layout-grid > *{margin: 0;}:where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}:where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+    .wp-block-navigation a:where(:not(.wp-element-button)){color: inherit;}
+    :where(.wp-block-post-template.is-layout-flex){gap: 1.25em;}:where(.wp-block-post-template.is-layout-grid){gap: 1.25em;}
+    :where(.wp-block-columns.is-layout-flex){gap: 2em;}:where(.wp-block-columns.is-layout-grid){gap: 2em;}
+    .wp-block-pullquote{font-size: 1.5em;line-height: 1.6;}
+    </style>
+    <link rel="stylesheet" id="contact-form-7-css" href="https://aircraftparts.net/wp-content/plugins/contact-form-7/includes/css/styles.css?ver=5.9.6" media="all">
+    <link rel="stylesheet" id="style-1-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/animate.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-2-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/bootstrap.min.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-3-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/meanmenu.min.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-5-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/owl.carousel.min.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-6-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/owl.theme.default.min.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-7-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/style.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-8-css" href="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/css/responsive.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-9-css" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css?ver=6.5.4" media="all">
+    <link rel="stylesheet" id="style-10-css" href="https://fonts.googleapis.com/css2?family=Inter%3Awght%40400%3B500%3B600%3B700%3B800&amp;display=swap&amp;ver=6.5.4" media="all">
+    <link rel="https://api.w.org/" href="https://aircraftparts.net/wp-json/"><link rel="alternate" type="application/json" href="https://aircraftparts.net/wp-json/wp/v2/pages/30"><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://aircraftparts.net/xmlrpc.php?rsd">
+    <meta name="generator" content="WordPress 6.5.4">
+    <link rel="shortlink" href="https://aircraftparts.net/?p=30">
+    <link rel="alternate" type="application/json+oembed" href="https://aircraftparts.net/wp-json/oembed/1.0/embed?url=https%3A%2F%2Faircraftparts.net%2Fblog%2F">
+    <link rel="alternate" type="text/xml+oembed" href="https://aircraftparts.net/wp-json/oembed/1.0/embed?url=https%3A%2F%2Faircraftparts.net%2Fblog%2F&amp;format=xml">
+    
+    <!-- Google Tag Manager for WordPress by gtm4wp.com -->
+    <!-- GTM Container placement set to off -->
+    <script data-cfasync="false" data-pagespeed-no-defer="" type="text/javascript">
+      var dataLayer_content = {"pagePostType":"page","pagePostType2":"single-page","pagePostAuthor":"admin"};
+      dataLayer.push( dataLayer_content );
+    </script>
+    <script>
+      console.warn && console.warn("[GTM4WP] Google Tag Manager container code placement set to OFF !!!");
+      console.warn && console.warn("[GTM4WP] Data layer codes are active but GTM container must be loaded using custom coding !!!");
+    </script>
+    <!-- End Google Tag Manager for WordPress by gtm4wp.com --><link rel="icon" href="https://aircraftparts.net/wp-content/uploads/2022/12/cropped-android-chrome-192x192-1-32x32.png" sizes="32x32">
+    <link rel="icon" href="https://aircraftparts.net/wp-content/uploads/2022/12/cropped-android-chrome-192x192-1-192x192.png" sizes="192x192">
+    <link rel="apple-touch-icon" href="https://aircraftparts.net/wp-content/uploads/2022/12/cropped-android-chrome-192x192-1-180x180.png">
+    <meta name="msapplication-TileImage" content="https://aircraftparts.net/wp-content/uploads/2022/12/cropped-android-chrome-192x192-1-270x270.png">
+    <script type="text/javascript" src="https://pi.pardot.com/analytics?ver=3&amp;visitor_id=114652713&amp;visitor_id_sign=f402b095e7170c58baf5aad2731c31b9995364eaff0a21ab1061aa894a76a11f6c1b037e0666501e245fbe9bbae700382e67c1a3&amp;pi_opt_in=&amp;campaign_id=4131&amp;account_id=979513&amp;title=Business%20Jet%20and%20Aircraft%20Parts%20Aftermarket%20Blog&amp;url=https%3A%2F%2Faircraftparts.net%2Fblog%2F&amp;referrer=https%3A%2F%2Faircraftparts.net%2F"></script></head>
+    <body data-rsssl="1" class="page-template page-template-page-template page-template-template-blog page-template-page-templatetemplate-blog-php page page-id-30 wp-embed-responsive is-light-theme singular">
+      <!-- Google Tag Manager (noscript) -->
+      <noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-W9MR3LW4"
+      height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+      <!-- End Google Tag Manager (noscript) -->
+      <section class="header-area">
+        <div class="container">
+          <div class="navbar-area">
+            <div class="main-responsive-nav">
+              <div class="mobile-nav"> <a href="https://aircraftparts.net" class="logo"> <img class="black-logo" src="https://aircraftparts.net/wp-content/uploads/2022/12/Aircraft-Parts-Distribution-Logo.jpg" alt="logo"> </a> </div>
+            </div>
+          </div>
+          <div class="row main-nav">
+            <div class="col-lg-2 col-sm-2 col-12"> <a class="navbar-brand" href="https://aircraftparts.net"> <img class="white-logo" src="https://aircraftparts.net/wp-content/uploads/2022/12/Aircraft-Parts-Distribution-Logo.jpg" alt="logo"> </a> </div>
+            <div class="col-lg-10 col-sm-10 col-12">
+              <div class="information">
+                <ul>
+                  <li> <span><i class="fa fa-volume-control-phone" aria-hidden="true"></i></span> <a href="tel:316-375-5780">316-375-5780</a> </li>
+                  <!--<li> <span><i class="fa fa-envelope-o" aria-hidden="true"></i></span> <a href="mailto:Info@aircraftparts.net">Info@aircraftparts.net</a></li>-->
+             <li> <span><i class="fa fa-envelope-o" aria-hidden="true"></i></span> <a href="mailto:Sales@aircraftparts.net">Sales@aircraftparts.net</a></li>
+                </ul>
+              </div>
+              <nav class="navbar navbar-expand-md navbar-light">
+                <div class="collapse navbar-collapse mean-menu" id="navbarSupportedContent" style="display: block;">
+      
+            <ul id="menu-header-menu" class="navbar-nav"><li id="menu-item-24" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-24 nav-item"><a href="https://aircraftparts.net/" class="nav-link">Aircraft Parts Distribution</a></li>
+      <li id="menu-item-25" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-25 nav-item"><a href="https://aircraftparts.net/about-us/" class="nav-link">About Us</a></li>
+      <li id="menu-item-34" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-34 nav-item"><a href="https://aircraftparts.net/our-services/" class="nav-link">Our Services</a></li>
+      <li id="menu-item-85" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-85 nav-item"><a href="https://aircraftparts.net/testimonials/" class="nav-link">Testimonials</a></li>
+      <li id="menu-item-82" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-30 current_page_item menu-item-82 active  nav-item"><a href="https://aircraftparts.net/blog/" aria-current="page" class="nav-link">Blog</a></li>
+      <li id="menu-item-27" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-27 nav-item"><a href="https://aircraftparts.net/faq/" class="nav-link">FAQ</a></li>
+      <li id="menu-item-26" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-26 nav-item"><a href="https://aircraftparts.net/contact-us/" class="nav-link">Contact Us</a></li>
+      </ul>            <!-- <ul class="navbar-nav">
+                    <li class="nav-item"><a href="index.html" class="nav-link active"> Distribution</a></li>
+                    <li class="nav-item"><a href="about.html" class="nav-link">About Us</a></li>
+                    <li class="nav-item"><a href="services.html" class="nav-link">Our Services</a></li>
+                    <li class="nav-item"><a href="testimonial.html" class="nav-link">Testimonial</a></li>
+                    <li class="nav-item"><a href="blog.html" class="nav-link">Blog</a></li>
+                    <li class="nav-item"><a href="faq.html" class="nav-link">FAQ</a></li>
+                    <li class="nav-item"><a href="contact.html" class="nav-link">Contact Us</a></li>
+                  </ul> -->
+                </div>
+            <a class="shop-btn" href="mailto:Sales@aircraftparts.net">STORE</a>
+              </nav>
+            </div>
+          </div>
+        </div>
+      </section>
+        <section class="uni-banner">
+        <div class="inner-banner-img"> <img src="https://aircraftparts.net/wp-content/uploads/2022/12/inner-banner.png" alt="" class="img-fluid"> </div>
+        <div class="container">
+          <div class="uni-banner-text-area">
+            <h1>Blog</h1>
+            <ul>
+              <li><a href="https://aircraftparts.net">Home</a></li>
+              <li>Blog</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+        <div class="blog-section">
+            <div class="container">
+                
+             <div class="row">
+                 <div class="col-lg-8 col-md-6 col-12">
+                      <div class="row">
+                             <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/artificial-intelligence-in-aircraft-parts-distribution/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2024/05/Untitled-4-1568x1568.png" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              25 May, 2024</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/artificial-intelligence-in-aircraft-parts-distribution/">Generative AI and the Aircraft Parts Aftermarket</a></h3>
+                              <p>Introduction
+      Generative AI, a new form of AI, burst on the scene in late 2022 with Chat GPT, Mic...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/artificial-intelligence-in-aircraft-parts-distribution/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                              <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/buying-aircraft-parts/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2024/05/AdobeStock_171140941-1568x1120.jpeg" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              5 May, 2024</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/buying-aircraft-parts/">Factors to consider when buying aircraft parts</a></h3>
+                              <p>Factors to Consider when Buying Aircraft Parts
+      Buying parts profitably is more than just price c...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/buying-aircraft-parts/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                              <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/what-are-the-different-types-of-aviation-headsets-that-can-be-sourced-from-aircraft-parts-companies/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2024/01/replacing-engine-plane-working-people-tap-concept-maintenance-aircraft.jpg" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              2 Feb, 2024</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/what-are-the-different-types-of-aviation-headsets-that-can-be-sourced-from-aircraft-parts-companies/">What are the different types of aviation headse...</a></h3>
+                              <p>Aviation headsets are meticulously designed to tackle this challenge head-on. They act as a vital...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/what-are-the-different-types-of-aviation-headsets-that-can-be-sourced-from-aircraft-parts-companies/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                              <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/aircraft-parts-suppliers-installing-the-aircraft-exhaust-system-related-faqs/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2024/01/close-up-image-big-open-turbine-with-wing-scheduled-modernization-passenger-airplane-aerodrome.jpg" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              31 Jan, 2024</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/aircraft-parts-suppliers-installing-the-aircraft-exhaust-system-related-faqs/">Aircraft Parts Suppliers – Installing the Aircr...</a></h3>
+                              <p>There is no denying that inspecting the aircraft’s exhaust parts is crucial. Even if there is one...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/aircraft-parts-suppliers-installing-the-aircraft-exhaust-system-related-faqs/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                              <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/aircraft-parts-landing-gear-the-physics-of-different-aerospace-parts/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2024/01/AdobeStock_175596485_Preview.jpeg" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              29 Jan, 2024</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/aircraft-parts-landing-gear-the-physics-of-different-aerospace-parts/">Aircraft Parts Landing Gear – The Physics of Di...</a></h3>
+                              <p>When it is about building aircraft, offering aircraft parts, or providing maintenance and repair ...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/aircraft-parts-landing-gear-the-physics-of-different-aerospace-parts/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                              <div class="col-lg-6 col-sm-12 col-12">
+                      <div class="blog-card">
+                          <div class="blogimg">
+                          <a href="https://aircraftparts.net/what-are-the-crucial-factors-in-aircraft-parts-distribution/">
+                              <img src="https://aircraftparts.net/wp-content/uploads/2023/12/aircraft-parts-distribution.jpg" alt="Blog Images">
+                          </a>
+                          </div>
+                          <div class="blog-card-inner-text">
+                          <div class="tag"><i class="fa fa-clock-o" aria-hidden="true"></i>
+                              27 Dec, 2023</div>
+                          <div class="content">
+                              <h3><a href="https://aircraftparts.net/what-are-the-crucial-factors-in-aircraft-parts-distribution/">What Are the Crucial Factors in Aircraft Parts ...</a></h3>
+                              <p>Many aircraft part distributors and similar aerospace industry participants have existed througho...</p>
+      
+      
+      
+                             <a href="https://aircraftparts.net/what-are-the-crucial-factors-in-aircraft-parts-distribution/" class="theme_bttn">Learn More <i class="fa fa-long-arrow-right" aria-hidden="true"></i>
+                              </a>
+                              
+                              </div>
+                          </div>
+                      </div>
+                      </div>
+                      
+                  </div></div>
+                  <div class="col-lg-4 col-md-6 col-12">
+                      <div class="recentposts">
+                      <section id="block-2" class="widget widget_block widget_search"><form role="search" method="get" action="https://aircraftparts.net/" class="wp-block-search__button-outside wp-block-search__text-button wp-block-search"><label class="wp-block-search__label" for="wp-block-search__input-1">Search</label><div class="wp-block-search__inside-wrapper "><input class="wp-block-search__input" id="wp-block-search__input-1" placeholder="" value="" type="search" name="s" required=""><button aria-label="Search" class="wp-block-search__button wp-element-button" type="submit">Search</button></div></form></section><section id="block-3" class="widget widget_block">
+      <div class="wp-block-group"><div class="wp-block-group__inner-container is-layout-flow wp-block-group-is-layout-flow">
+      <h2 class="wp-block-heading">Recent Posts</h2>
+      
+      
+      <ul class="wp-block-latest-posts__list wp-block-latest-posts"><li><a class="wp-block-latest-posts__post-title" href="https://aircraftparts.net/artificial-intelligence-in-aircraft-parts-distribution/">Generative AI and the Aircraft Parts Aftermarket</a></li>
+      <li><a class="wp-block-latest-posts__post-title" href="https://aircraftparts.net/buying-aircraft-parts/">Factors to consider when buying aircraft parts</a></li>
+      <li><a class="wp-block-latest-posts__post-title" href="https://aircraftparts.net/what-are-the-different-types-of-aviation-headsets-that-can-be-sourced-from-aircraft-parts-companies/">What are the different types of aviation headsets that can be sourced from aircraft parts companies?</a></li>
+      <li><a class="wp-block-latest-posts__post-title" href="https://aircraftparts.net/aircraft-parts-suppliers-installing-the-aircraft-exhaust-system-related-faqs/">Aircraft Parts Suppliers – Installing the Aircraft Exhaust System &amp; Related FAQs</a></li>
+      <li><a class="wp-block-latest-posts__post-title" href="https://aircraftparts.net/aircraft-parts-landing-gear-the-physics-of-different-aerospace-parts/">Aircraft Parts Landing Gear – The Physics of Different Aerospace Parts</a></li>
+      </ul></div></div>
+      </section><section id="block-7" class="widget widget_block widget_text">
+      <p></p>
+      </section><section id="block-8" class="widget widget_block widget_text">
+      <p></p>
+      </section><section id="block-6" class="widget widget_block">
+      <div class="wp-block-group"><div class="wp-block-group__inner-container is-layout-flow wp-block-group-is-layout-flow">
+      <h2 class="wp-block-heading">Categories</h2>
+      
+      
+      <ul class="wp-block-categories-list wp-block-categories">	<li class="cat-item cat-item-56"><a href="https://aircraftparts.net/category/aerospace-parts-distributors/">aerospace parts distributors</a>
+      </li>
+        <li class="cat-item cat-item-3"><a href="https://aircraftparts.net/category/aircraft-component-repair/">aircraft component repair</a>
+      </li>
+        <li class="cat-item cat-item-39"><a href="https://aircraftparts.net/category/aircraft-landing-gear-suppliers/">aircraft landing gear suppliers</a>
+      </li>
+        <li class="cat-item cat-item-8"><a href="https://aircraftparts.net/category/aircraft-parts-companies/">aircraft parts companies</a>
+      </li>
+        <li class="cat-item cat-item-14"><a href="https://aircraftparts.net/category/aircraft-parts-dealers/">aircraft parts dealers</a>
+      </li>
+        <li class="cat-item cat-item-59"><a href="https://aircraftparts.net/category/aircraft-parts-distribution/">aircraft parts distribution</a>
+      </li>
+        <li class="cat-item cat-item-22"><a href="https://aircraftparts.net/category/aircraft-parts-suppliers/">aircraft parts suppliers</a>
+      </li>
+        <li class="cat-item cat-item-29"><a href="https://aircraftparts.net/category/american-aviation-parts/">American aviation parts</a>
+      </li>
+        <li class="cat-item cat-item-75"><a href="https://aircraftparts.net/category/artificial-intelligence/">Artificial Intelligence</a>
+      </li>
+        <li class="cat-item cat-item-49"><a href="https://aircraftparts.net/category/aviation-parts-supplier/">aviation parts supplier</a>
+      </li>
+        <li class="cat-item cat-item-74"><a href="https://aircraftparts.net/category/buying-aircraft-parts/">Buying Aircraft Parts</a>
+      </li>
+        <li class="cat-item cat-item-1"><a href="https://aircraftparts.net/category/uncategorized/">Uncategorized</a>
+      </li>
+      </ul></div></div>
+      </section><section id="block-12" class="widget widget_block">
+      <div class="wp-block-group is-style-default"><div class="wp-block-group__inner-container is-layout-constrained wp-block-group-is-layout-constrained">
+      <div class="wp-block-group"><div class="wp-block-group__inner-container is-layout-flow wp-block-group-is-layout-flow">
+      <h2 class="wp-block-heading">Contact Us</h2>
+      </div></div>
+      </div></div>
+      </section><section id="block-15" class="widget widget_block"><div class="wp-block-contact-form-7-contact-form-selector">
+      <script>
+          document.addEventListener("DOMContentLoaded", function () {
+              let currentUrl = window.location.href + "?SuccessId=0001234xzmb99";
+              let redirectInput = document.getElementById("wtl-redirect").value = currentUrl;
+              let blogName = window.location.pathname;
+              document.getElementById('blog-name').value = blogName;
+              const leadForm = document.getElementById('webToLeadForm');
+              const form = document.getElementById('submitBtn');
+              function isValidEmail(email) {
+                  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                  return emailRegex.test(email);
+              }
+              function isValidPhoneNumber(phone) {
+                  const phoneRegex = /^[0-9]+$/;
+                  return phoneRegex.test(phone);
+              }
+              function displayErrorMessage(fieldName, message) {
+                  let errorMessage = document.querySelector(`[name="${fieldName}"] + .error-message`);
+                  if (!errorMessage) {
+                      errorMessage = document.createElement("div");
+                      errorMessage.classList.add("error-message");
+                      errorMessage.innerText = message;
+                      errorMessage.style.color = "#DC3232";
+                      const field = document.querySelector(`[name="${fieldName}"]`);
+                      field.parentNode.appendChild(errorMessage);
+                  } else {
+                      errorMessage.textContent = message;
+                  }
+              }
+              function removeErrorMessage(fieldName) {
+                  const errorMessage = document.querySelector(`[name="${fieldName}"] + .error-message`);
+                  if (errorMessage) {
+                      errorMessage.parentNode.removeChild(errorMessage);
+                  }
+              }
+              // Add event listeners for onchange event to trigger validation
+              const formControls = leadForm.querySelectorAll(".wpcf7-form-control");
+              formControls.forEach((control) => {
+                  control.addEventListener("change", () => {
+                      validateField(control);
+                  });
+              });
+              function validateField(field) {
+                  const fieldValue = field.value.trim();
+                  const fieldName = field.getAttribute("name");
+                  let errorMessage = "";
+                  if (fieldName === "email") {
+                      if (!fieldValue) {
+                          errorMessage = "";
+                          errorMessage = "Please fill out this field.";
+                      } else if (!isValidEmail(fieldValue)) {
+                          errorMessage = "Please enter an email address.";
+                      }
+                  }
+                  if (fieldName === "phone") {
+                      if (!fieldValue) {
+                          errorMessage = "";
+                          errorMessage = "Please fill out this field.";
+                      } else if (!isValidPhoneNumber(fieldValue)) {
+                          errorMessage = "Please enter a telephone number.";
+                      }
+                  }
+                  if (!fieldValue) {
+                      errorMessage = "Please fill out this field.";
+                  }
+                  if (errorMessage) {
+                      displayErrorMessage(fieldName, errorMessage);
+                  } else {
+                      removeErrorMessage(fieldName);
+                  }
+              }
+              form.addEventListener("click", function (event) {
+                  // event.preventDefault();
+                  const fields = [
+                      { id: "first_name", message: "Please fill out this field." },
+                      { id: "last_name", message: "Please fill out this field." },
+                      { id: "company", message: "Please fill out this field." },
+                      { id: "email", message: "Please fill out this field." },
+                      { id: "phone", message: "Please fill out this field." },
+                      { id: "title", message: "Please fill out this field." },
+                      { id: "textMessage", message: "Please fill out this field." }
+                  ];
+                  let isValid = true;
+                  fields.forEach(function (field) {
+                      const input = document.getElementById(field.id);
+                      let errorElement = input.nextElementSibling;
+                      if (input.value.trim() === '') {
+                          if (!errorElement) {
+                              errorElement = document.createElement('div');
+                              errorElement.classList.add('error-message');
+                              input.parentNode.appendChild(errorElement);
+                          }
+                          errorElement.textContent = field.message;
+                          isValid = false;
+                      } else if (field.id === "email" && !isValidEmail(input.value)) {
+                          if (!errorElement) {
+                              errorElement = document.createElement('div');
+                              errorElement.classList.add('error-message');
+                              input.parentNode.appendChild(errorElement);
+                          }
+                          if (input.value.trim() === "") {
+                              errorElement.textContent = "Please fill out this field.";
+                          }
+                          else {
+                              errorElement.textContent = "Please enter an email address.";
+                          }
+                          isValid = false;
+                      } else if (field.id === "phone" && !isValidPhoneNumber(input.value)) {
+                          if (!errorElement) {
+                              errorElement = document.createElement('div');
+                              errorElement.classList.add('error-message');
+                              input.parentNode.appendChild(errorElement);
+                          }
+                          if (input.value.trim() === "") {
+                              errorElement.textContent = "Please fill out this field.";
+                          }
+                          else {
+                              errorElement.textContent = "Please enter a telephone number.";
+                          }
+                          isValid = false;
+                      } else {
+                          if (errorElement) {
+                              input.parentNode.removeChild(errorElement);
+                          }
+                      }
+                      if (errorElement) {
+                          errorElement.style.color = "#DC3232";
+                          errorElement.style.fontSize = "1em";
+                      }
+                  });
+                  console.log("THIS IS INVALID :: ", isValid);
+                  if (isValid) {
+                      leadForm.submit();
+                  } else {
+                      event.preventDefault();
+                      const errorMessageElement = document.querySelector('.wpcf7-response-output.submit-error');
+                      errorMessageElement.textContent = "One or more fields have an error. Please check and try again.";
+                      errorMessageElement.style.color = "black";
+                      errorMessageElement.style.border = "2px solid red";
+                  }
+              });
+              successMessage();
+          });
+          function successMessage() {
+              if (window.location.href.includes("SuccessId=0001234xzmb99")) {
+                  const successMessageElement = document.querySelector('.wpcf7-response-output.submit-error');
+                  successMessageElement.textContent = "Thank you for your message. It has been sent.";
+                  successMessageElement.style.color = "black";
+                  successMessageElement.style.border = "2px solid green";
+                  successMessageElement.scrollIntoView({ behavior: "smooth", block: "start" });
+                  const urlWithoutSuccessId = window.location.href.replace("?SuccessId=0001234xzmb99", "");
+                  history.replaceState(null, '', urlWithoutSuccessId);
+              }
+          }
+      </script>
+      
+      
+      <section id="block-13" class="widget widget_block">
+          <div class="wp-block-contact-form-7-contact-form-selector">
+              <!-- <div class="wpcf7 js" id="wpcf7-f77-o1" lang="en-US" dir="ltr"> -->
+             
+              <!-- FORM HANDLER  -->
+              <meta http-equiv="Content-type" content="text/html; charset=UTF-8">
+              <form id="webToLeadForm"
+              action="https://test.salesforce.com/servlet/servlet.WebToLead?encoding=UTF-8&orgId=00D5f000007G18K" method="POST">
+                  <input type="hidden" name="oid" value="00D5f000007G18K">
+                  <input type="hidden" name="retURL" id="wtl-redirect" value="https://aircraftparts.net/blog/?SuccessId=0001234xzmb99">
+                  <div style="display: none;">
+                      <input type="hidden" name="_wpcf7" value="77">
+                      <input type="hidden" name="_wpcf7_version" value="5.8.7">
+                      <input type="hidden" name="_wpcf7_locale" value="en_US">
+                      <input type="hidden" name="_wpcf7_unit_tag" value="wpcf7-f77-o1">
+                      <input type="hidden" name="_wpcf7_container_post" value="0">
+                      <input type="hidden" name="_wpcf7_posted_data_hash" value="">
+                      <input type="hidden" name="_wpcf7_recaptcha_response" value="03AFcWeA6SFOM_RKUhsDscRG9I-vd6ffDC_5aZKmyD0XJLpIx7imr77l381JOmlbtECs0piMP-DcM9oxQfCch7T4-B9tKmocX6eFuUxTqnAc6rA09QBAEgJlyTAPk8px-PgVcl6lQ-Hgjlb1fcOfoeHaUekEDxxcK29Raldbnp1mnmi1Mb8WqHep48bzA-YUi_3bmFhM6hvJF-N6f2F25QHB19uo3Du2Qz5UQxKVaKFkIUt9xjucUl6XkozlvxZ3B3eumV0mITC7W0e70Dc6sEadUziiqN2KIY4Ku-RErmGzFcQdPZ_CsSEu2KTqO1eAgyyK4F593ODm7TFgSdi7SGR4crr3Sv8CslxBX6sy3vfgRfIKX5ARLq0TNkTcrLNOPowu_bRO4SGJbODNUQYefS7oCYN3lHKpgsMY4KpkE8wUNeBcTKzzXXZEIFOzisDSDmQNQCLwiyiDeNeMcyA8BXsrl7-TS4y2hV27a9rgQ9g_ZIcpdn88R4pEKJYoPJsNbF_sB4IlGpi7c8Jd0FCF9rVHNfN44PiBC6zJZNiRBF2Q5Y21RtzAJ84pvhfBax7WcJxNInSgS7rcSNGA_z3yGVn5id10uK37Eh6GK9Rt0g8nPsgWBzi7RH0hUXqW0E3UHhQxtVt0CME-x3mdXPTLxs5FSn6-gdDOVd8zqwkxx6BrnJocXN7IkfIAjw8howlVpBEWuhqzN56zneSZIFSkwXl-jgnJKyiLob00tni6OeTlIyRUdbFZRnuc2FhWstlpgB5tL5bjPw4TUuYSSICuP1ZLFE4aUmh0GQjEUBixBuw4q6Ywsj4czYebnDk2i7o7QDsIGf5jtzsX3SO3D1LSY8BfJTvpwNd-J30hwObquKQunKoG8BNWLJeajHCCKoV-k6HzVhAumIeRovAMrurxhM-9QhpNFcdMTTD6Zhbn9EWrRxDAW4X0bV363Nm7BnV6Q6wxW_eFqs6m46Bk-dPFknrSriuVsBcA4uAep4h7vkJqkx__8EzlIoLfj-K5ffNvgoVbzzWpJhWzgtm7al3pA4tx0QMhEe5xpZKXe31MEdRPQvJDbpv_WJC2qCc_vMIMJfO74t8P0y-AJn3vG9UdA2TRQ4Jsb6Tn_lnETWowRqBulC9zueSaZ5A9iwW23LvukDtT30CTnRluU3mw_M201PZ4a5yfA-ObqU5Ov0jFExhKrXxBiiRuWbFZqGpEcXPaH9pAUZ7lqEGStwctpr5kjulZUaghpkI3PF3tWufEB8MQkl22_p4N3lQg3ur1EoAaNs_zTaycey3bseKPIdsGE6TiCQhzDbSXpiXJ75cSf5GNTPLI3FfnAeQ9mDmnf9vK-1cSCDsTDVQ2SeGK6TlVm0PhE8LnnzCghu5wQUJlCI21EI8q0lQUyDWyuJgakiuG9ok1WaNKErE-G5t3PXLLQq9gxBV3gVZnftb75y669dGYCYoDGXlOuNXKtras7RfqH6Q_xwXuhlsrgcAR2e97A5jY1-OJlS-d58bGCQQWhJIQekAd-6Euwms5ktqWk4kyihE43VciPB92hHXAvqpRyCdJP_isCw7ze5T2RLGFrdDtTJUXM70miKUgGyPTA7E7_QbpNvtUJQO4vMeMaTU4tcI3fQVuRH8Uuf6488RjDbiI3aG9qmabbP-lpdP4bxcSx2KA9dcWz609Cm32F33eStA6LII9eAuGF8rJ1eiUoSh_m-_LaFAcy0pkkE82H_6FDe-LnQu7g58c2U">
+                  </div>
+                  <div class="row">
+                      <div class="col-md-6 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="text-182">
+                                      <input id="first_name" class="wpcf7-form-control wpcf7-text  form-control" maxlength="40" name="first_name" size="40" type="text" placeholder="First Name*">
+                                  </span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="text-182">
+                                      <input id="last_name" class="wpcf7-form-control wpcf7-text  form-control" maxlength="80" name="last_name" size="40" type="text" placeholder="Last Name*">
+                                  </span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="company-113"><input id="company" class="wpcf7-form-control wpcf7-text  form-control" maxlength="40" name="company" size="40" type="text" placeholder="Company*"></span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="email-113"><input class="wpcf7-form-control wpcf7-email  wpcf7-text wpcf7-validates-as-email form-control" id="email" maxlength="80" name="email" size="40" type="text" placeholder="Email*"></span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="tel-154"><input class="wpcf7-form-control wpcf7-tel wpcf7-text wpcf7-validates-as-tel form-control" id="phone" maxlength="40" name="phone" size="40" type="text" placeholder="Phone Number*"></span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-6 col-sm-6 col-12">
+                        <div class="form-group">
+                            <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="text-192">
+                                    <input class="wpcf7-form-control wpcf7-text form-control partNumber"
+                                        id="00NUS000001ga89" maxlength="255" name="00NUS000001ga89" size="20" type="text" placeholder="Part # or keyword" onkeyup="handlePartNumber()">
+                                </span>
+                            </p>
+                            <div id="partNumberResults" class="hidden"></div>
+                        </div>
+                    </div>
+                      <div class="col-md-12 col-sm-6 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="text-192"><input class="wpcf7-form-control wpcf7-text  form-control" id="title" maxlength="40" name="title" size="40" type="text" placeholder="Subject*"></span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div class="col-md-12 col-sm-12 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important"><span class="wpcf7-form-control-wrap" data-name="textarea-872"><textarea cols="40" rows="3" id="textMessage" class="wpcf7-form-control wpcf7-textarea  form-control" name="description" placeholder="Your Messages..."></textarea></span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+                      <div style="display: none;" class="col-md-12 col-sm-12 col-12">
+                          <div class="form-group">
+                              <p style="min-height: 0px !important; padding-bottom: 0px !important">
+                                  <span class="wpcf7-form-control-wrap" data-name="textarea-872">
+                                      <input class="wpcf7-form-control wpcf7-tel wpcf7-text wpcf7-validates-as-tel form-control" id="blog-name" maxlength="40" name="blogName" size="40" type="text" placeholder="Blog Name">
+                                  </span>
+                              </p>
+                              <div class="help-block with-errors">
+                              </div>
+                          </div>
+                      </div>
+              
+                      <div class="col-md-12 col-sm-12 col-12 submit-button">
+                        <p><input class="wpcf7-form-control default-button submit_button" id="submitBtn" type="submit" disabled="true"
+                                name="submit" value="Send Message" onclick="submitButton()">
+                        </p>
+                    </div>
+              <div style="margin-top: 20px; padding: 5px;" class="wpcf7-response-output submit-error" aria-hidden="true">
+              </div>
+          </div></form>
+      </div></section>
+      
+      </div></section>                </div>
+                  </div>    
+                          
+             </div>
+             
+             
+           </div>
+      </div>
+      
+      
+      
+                          
+                           
+      
+            <section>
+        <div class="footer">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-4 col-md-4 col-sm-4 col-12">
+                <div class="footer-logo-area"> <a href="https://aircraftparts.net"><img src="https://aircraftparts.net/wp-content/uploads/2022/12/logo-10.png" alt="logo"></a>
+                  <p></p>
+                </div>
+                <div class="footer-social-icon">
+                  <ul>
+                    <li><a href="https://www.facebook.com/aircraftpartsdistribution"><i class="fa fa-facebook" aria-hidden="true"></i></a></li>
+                  
+                    <li><a href="https://www.linkedin.com/company/aircraft-parts-distribution/"><i class="fa fa-linkedin" aria-hidden="true"></i></a></li>
+                    <!--<li><a href=""><i class="fa fa-instagram" aria-hidden="true"></i></a></li>-->
+                  </ul>
+                </div>
+              </div>
+              <div class="col-lg-4 col-md-4 col-sm-4 col-12">
+                <div class="footer-links footer-quick-links">
+                  <h3>Quick Links</h3>
+              <ul id="menu-footer-menu" class="menu"><li id="menu-item-308" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-home menu-item-308 nav-item"><a href="https://aircraftparts.net/" class="nav-link">Aircraft Parts Distribution</a></li>
+      <li id="menu-item-309" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-30 current_page_item menu-item-309 active  nav-item"><a href="https://aircraftparts.net/blog/" aria-current="page" class="nav-link">Blog</a></li>
+      <li id="menu-item-310" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-310 nav-item"><a href="https://aircraftparts.net/contact-us/" class="nav-link">Contact Us</a></li>
+      <li id="menu-item-311" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-311 nav-item"><a href="https://aircraftparts.net/faq/" class="nav-link">FAQ</a></li>
+      <li id="menu-item-312" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-312 nav-item"><a href="https://aircraftparts.net/our-services/" class="nav-link">Our Services</a></li>
+      <li id="menu-item-313" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-313 nav-item"><a href="https://aircraftparts.net/testimonials/" class="nav-link">Testimonials</a></li>
+      <li id="menu-item-283" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-privacy-policy menu-item-283 nav-item"><a rel="privacy-policy" href="https://aircraftparts.net/privacy-policy/" class="nav-link">Privacy Policy</a></li>
+      </ul>
+                </div>
+              </div>
+              <div class="col-lg-4 col-md-4 col-sm-4 col-12">
+                <div class="footer-links footer-newsletter">
+                  <h3>Get In Touch</h3>
+                  <div class="footer-contant">
+                    <ul class="contact-list">
+                      <li><i class="fa fa-map-marker"></i><p>1618 N Ohio Street<br>Augusta, KS. 67010</p></li>
+                      <li><i class="fa fa-phone"></i><a href="tel:316-375-5780">316-375-5780</a></li>
+                      <li><i class="fa fa-envelope-o"></i><a href="mailto:Info@aircraftparts.net">Info@aircraftparts.net</a></li>
+                 <li><i class="fa fa-envelope-o"></i><a href="mailto:Sales@aircraftparts.net">Sales@aircraftparts.net</a></li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="footer-butm">
+          <div class="container">
+            <div class="row">
+              <div class="col-lg-6 col-md-6 col-sm-6 col-12">
+                <div class="footer-butm-left">
+                  <p>2024 © <a href="https://aircraftparts.net"> Aircraft Parts.</a> All Rights Reserved.</p>
+                </div>
+              </div>
+              <div class="col-lg-6 col-md-6 col-sm-6 col-12">
+                <div class="footer-butm-right">
+                  <p>Designed By <a target="_blank" href="https://www.digitalsftware.com">Digital SFTware</a></p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <div class="go-top active"><i class="fa fa-angle-double-up" aria-hidden="true"></i></div>
+      
+      
+      <script>document.body.classList.remove("no-js");</script>	<script>
+        if ( -1 !== navigator.userAgent.indexOf( 'MSIE' ) || -1 !== navigator.appVersion.indexOf( 'Trident/' ) ) {
+          document.body.classList.add( 'is-IE' );
+        }
+        </script>
+        <script src="https://aircraftparts.net/wp-content/plugins/contact-form-7/includes/swv/js/index.js?ver=5.9.6" id="swv-js"></script>
+      <script id="contact-form-7-js-extra">
+      var wpcf7 = {"api":{"root":"https:\/\/aircraftparts.net\/wp-json\/","namespace":"contact-form-7\/v1"}};
+      </script>
+      <script src="https://aircraftparts.net/wp-content/plugins/contact-form-7/includes/js/index.js?ver=5.9.6" id="contact-form-7-js"></script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/jquery.min.js?ver=6.5.4" id="script-2-js"></script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/bootstrap.bundle.min.js?ver=6.5.4" id="script-3-js"></script><script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LocalBusiness",
+        "name": "Aircraft Parts Distribution",
+        "image": "https://aircraftparts.net/wp-content/uploads/2022/12/Aircraft-Parts-Distribution-Logo.jpg",
+        "@id": "",
+        "url": "https://aircraftparts.net/",
+        "telephone": "316-375-5780",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "1618 N Ohio Street",
+          "addressLocality": "Augusta",
+          "addressRegion": "KS",
+          "postalCode": "67010",
+          "addressCountry": "US"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": 37.691593,
+          "longitude": -96.96982039999999
+        }  
+      }
+      </script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/meanmenu.js?ver=6.5.4" id="script-4-js"></script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/owl.carousel.min.js?ver=6.5.4" id="script-6-js"></script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/WOW.js?ver=6.5.4" id="script-7-js"></script>
+      <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js?ver=6.5.4" id="script-8-js"></script>
+      <script src="https://aircraftparts.net/wp-content/themes/Aircraft-parts/assets/js/custom.js?ver=6.5.4" id="script-9-js"></script>
+      <script src="https://www.google.com/recaptcha/api.js?render=6LexWconAAAAAHI_yPhUcKZxULO5opAER5keo6hu&amp;ver=3.0" id="google-recaptcha-js"></script>
+      <script src="https://aircraftparts.net/wp-includes/js/dist/vendor/wp-polyfill-inert.min.js?ver=3.1.2" id="wp-polyfill-inert-js"></script>
+      <script src="https://aircraftparts.net/wp-includes/js/dist/vendor/regenerator-runtime.min.js?ver=0.14.0" id="regenerator-runtime-js"></script>
+      <script src="https://aircraftparts.net/wp-includes/js/dist/vendor/wp-polyfill.min.js?ver=3.15.0" id="wp-polyfill-js"></script>
+      <script id="wpcf7-recaptcha-js-extra">
+      var wpcf7_recaptcha = {"sitekey":"6LexWconAAAAAHI_yPhUcKZxULO5opAER5keo6hu","actions":{"homepage":"homepage","contactform":"contactform"}};
+      </script>
+      <script src="https://aircraftparts.net/wp-content/plugins/contact-form-7/modules/recaptcha/index.js?ver=5.9.6" id="wpcf7-recaptcha-js"></script>
+          <script>
+          /(trident|msie)/i.test(navigator.userAgent)&&document.getElementById&&window.addEventListener&&window.addEventListener("hashchange",(function(){var t,e=location.hash.substring(1);/^[A-z0-9_-]+$/.test(e)&&(t=document.getElementById(e))&&(/^(?:a|select|input|button|textarea)$/i.test(t.tagName)||(t.tabIndex=-1),t.focus())}),!1);
+          </script>
+          
+      <!-- Section Added By Metadologie : Start -->
+      <script type="text/javascript">
+      piAId = '979513';
+      piCId = '4131';
+      piHostname = 'pi.pardot.com';
+      (function() {
+        function async_load(){
+          var s = document.createElement('script'); s.type = 'text/javascript';
+          s.src = ('https:' == document.location.protocol ? 'https://pi' : 'http://cdn') + '.pardot.com/pd.js';
+          var c = document.getElementsByTagName('script')[0]; c.parentNode.insertBefore(s, c);
+        }
+        if(window.attachEvent) { window.attachEvent('onload', async_load); }
+        else { window.addEventListener('load', async_load, false); }
+      })();
+      </script>
+      <!-- Section Added By Metadologie : End -->
+      
+      
+      
+      <div><div class="grecaptcha-badge" data-style="bottomright" style="width: 256px; height: 60px; display: block; transition: right 0.3s ease 0s; position: fixed; bottom: 14px; right: -186px; box-shadow: gray 0px 0px 5px; border-radius: 2px; overflow: hidden;"><div class="grecaptcha-logo"><iframe title="reCAPTCHA" width="256" height="60" role="presentation" name="a-36amg89vf3ge" frameborder="0" scrolling="no" sandbox="allow-forms allow-popups allow-same-origin allow-scripts allow-top-navigation allow-modals allow-popups-to-escape-sandbox allow-storage-access-by-user-activation" src="https://www.google.com/recaptcha/api2/anchor?ar=1&amp;k=6LexWconAAAAAHI_yPhUcKZxULO5opAER5keo6hu&amp;co=aHR0cHM6Ly9haXJjcmFmdHBhcnRzLm5ldDo0NDM.&amp;hl=en&amp;v=KXX4ARWFlYTftefkdODAYWZh&amp;size=invisible&amp;cb=k70n1u8gmwag"></iframe></div><div class="grecaptcha-error"></div><textarea id="g-recaptcha-response-100000" name="g-recaptcha-response" class="g-recaptcha-response" style="width: 250px; height: 40px; border: 1px solid rgb(193, 193, 193); margin: 10px 25px; padding: 0px; resize: none; display: none;"></textarea></div><iframe style="display: none;"></iframe></div></body>
+</html>
